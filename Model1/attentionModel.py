@@ -1,5 +1,5 @@
 from __future__ import print_function
-from keras.layers import Permute, Conv2D, MaxPooling2D, Input, Multiply, Reshape, Dense, Flatten, Activation, Dropout, Lambda
+from keras.layers import BatchNormalization, Permute, Conv2D, MaxPooling2D, Input, Multiply, Reshape, Dense, Flatten, Activation, Dropout, Lambda
 from keras.models import Model
 from keras.datasets import cifar10
 import keras
@@ -46,38 +46,55 @@ neurons -> Bigger dense network -> softmax -> prediction
 
 img_inputs = Input(shape=input_dim)
 conv1 = Conv2D(1, (1,1), padding='same', activation='relu')(img_inputs)     #1
-conv64 = Conv2D(64, (3,3), padding='same', activation='relu')(conv1)        #2
+conv = Conv2D(32, (3,3), padding='same', activation='relu')(conv1)        #2
+conv = BatchNormalization()(conv)
 
 
-#Attention
-y = Conv2D(1, (1,1))(conv64) # 32x32x1 ?
-y = Permute((3, 2, 1))(y)
-y = Dense(32, activation='softmax')(y)
-y = Permute((1, 3, 2))(y)
-y = Dense(32, activation='softmax')(y)
-#now permute back
-y = Permute((1, 3, 2))(y)
-y = Permute((3, 2, 1))(y)
-#end attention
-
-
-mult = Multiply()([conv64,y])
-pooled = MaxPooling2D(pool_size=(2,2))(mult)
-conv = Conv2D(128, (3,3), padding='same', activation='relu')(pooled)
-
-#Attention
+#Attention 1
 y = Conv2D(1, (1,1))(conv) # 32x32x1 ?
 y = Permute((3, 2, 1))(y)
 y = Dense(32, activation='softmax')(y)
 y = Permute((1, 3, 2))(y)
 y = Dense(32, activation='softmax')(y)
-#now permute back
-y = Permute((1, 3, 2))(y)
-y = Permute((3, 2, 1))(y)
-#end attention 
+y = Permute((1, 3, 2))(y) #now permute back
+y = Permute((3, 2, 1))(y) #end attention
 
+
+mult = Multiply()([conv,y])
 pooled = MaxPooling2D(pool_size=(2,2))(mult)
+pooled = Dropout(0.2)(pooled)
+conv = Conv2D(64, (3,3), padding='same', activation='relu')(pooled)
+conv = BatchNormalization()(conv)
+
+#Attention 2
+y = Conv2D(1, (1,1))(conv) # 32x32x1 ?
+y = Permute((3, 2, 1))(y)
+y = Dense(16, activation='softmax')(y)
+y = Permute((1, 3, 2))(y)
+y = Dense(16, activation='softmax')(y)
+y = Permute((1, 3, 2))(y) #now permute back
+y = Permute((3, 2, 1))(y) #end attention
+
+mult = Multiply()([conv,y])
+pooled = MaxPooling2D(pool_size=(2,2))(mult)
+pooled = Dropout(0.3)(pooled)
+conv = Conv2D(96, (3,3), padding='same', activation='relu')(pooled)
+conv = BatchNormalization()(conv)
+
+#Attention 3
+y = Conv2D(1, (1,1))(conv) # 32x32x1 ?
+y = Permute((3, 2, 1))(y)
+y = Dense(8, activation='softmax')(y)
+y = Permute((1, 3, 2))(y)
+y = Dense(8, activation='softmax')(y)
+y = Permute((1, 3, 2))(y) #now permute back
+y = Permute((3, 2, 1))(y) #end attention
+
+mult = Multiply()([conv,y])
+pooled = MaxPooling2D(pool_size=(2,2))(mult)
+pooled = Dropout(0.4)(pooled)
 conv = Conv2D(128, (3,3), padding='same', activation='relu')(pooled)
+conv = BatchNormalization()(conv)
 
 
 
